@@ -5,13 +5,13 @@ const router = express.Router();
 const org = process.env.ORG_ID;
 
 // Middleware for authorization. For API calls that require authorization, this middleware checks if the header of API calls have a valid security token. If no security token or invalid security token, then the API call is not made.
-const authMiddleWare = require("../auth/authMiddleWare");
+const requireAuth = require('../auth/requireAuth');
 
 // importing data model schemas
 const { events, clients } = require("../models/models");
 
 // API endpoint to get all events for org
-router.get("/", authMiddleWare, (req, res, next) => {
+router.get("/", requireAuth, (req, res, next) => {
   events
     .find({ org: org }, (error, data) => {
       if (error) {
@@ -25,7 +25,7 @@ router.get("/", authMiddleWare, (req, res, next) => {
 });
 
 // API endpoint to GET single event by ID
-router.get("/id/:id", authMiddleWare, (req, res, next) => {
+router.get("/id/:id", requireAuth, (req, res, next) => {
   events.findOne({ _id: req.params.id, org: org }, (error, data) => {
     if (error) {
       return next(error);
@@ -39,7 +39,7 @@ router.get("/id/:id", authMiddleWare, (req, res, next) => {
 
 // API endpoint to GET events based on search query
 // Ex: '...?name=Food&searchBy=name'
-router.get("/search/", authMiddleWare, (req, res, next) => {
+router.get("/search/", requireAuth, (req, res, next) => {
   const dbQuery = { org: org };
   switch (req.query.searchBy) {
     case "name":
@@ -61,7 +61,7 @@ router.get("/search/", authMiddleWare, (req, res, next) => {
 });
 
 // API endpoint to GET events for which a client is signed up
-router.get("/client/:id", authMiddleWare, (req, res, next) => {
+router.get("/client/:id", requireAuth, (req, res, next) => {
   events.find({ attendees: req.params.id, org: org }, (error, data) => {
     if (error) {
       return next(error);
@@ -74,7 +74,7 @@ router.get("/client/:id", authMiddleWare, (req, res, next) => {
 // API endpoint to GET events for which a client is not signed up
 router.get(
   "/client/:id/not-registered",
-  authMiddleWare,
+  requireAuth,
   async (req, res, next) => {
     try {
       const eventsNotRegistered = await events.find({
@@ -89,7 +89,7 @@ router.get(
 );
 
 // API endpoint to GET attendee details for an event
-router.get("/attendees/:id", authMiddleWare, (req, res, next) => {
+router.get("/attendees/:id", requireAuth, (req, res, next) => {
   events.findById(req.params.id, (error, event) => {
     if (error) {
       return next(error);
@@ -113,7 +113,7 @@ router.get("/attendees/:id", authMiddleWare, (req, res, next) => {
 });
 
 // API endpoint to GET all events for a given service
-router.get("/service/:id", authMiddleWare, async (req, res, next) => {
+router.get("/service/:id", requireAuth, async (req, res, next) => {
   try {
     const eventsWithService = await events
       .find({ services: { $in: [req.params.id] }, org: org })
@@ -126,7 +126,7 @@ router.get("/service/:id", authMiddleWare, async (req, res, next) => {
 });
 
 // API endpoint to POST new event
-router.post("/", authMiddleWare, (req, res, next) => {
+router.post("/", requireAuth, (req, res, next) => {
   const newEvent = req.body;
   newEvent.org = org;
   events.create(newEvent, (error, data) => {
@@ -139,7 +139,7 @@ router.post("/", authMiddleWare, (req, res, next) => {
 });
 
 // API endpoint to PUT -> update event
-router.put("/update/:id", authMiddleWare, (req, res, next) => {
+router.put("/update/:id", requireAuth, (req, res, next) => {
   events.findOneAndUpdate(
     { _id: req.params.id, org: org },
     req.body,
@@ -154,7 +154,7 @@ router.put("/update/:id", authMiddleWare, (req, res, next) => {
 });
 
 // API endpoint to PUT -> add attendee to event
-router.put("/register", authMiddleWare, (req, res, next) => {
+router.put("/register", requireAuth, (req, res, next) => {
   events.find(
     { _id: req.query.event, attendees: req.query.client, org: org },
     (error, data) => {
@@ -183,7 +183,7 @@ router.put("/register", authMiddleWare, (req, res, next) => {
 });
 
 // API endpoint to PUT -> remove attendee from event
-router.put("/deregister", authMiddleWare, (req, res, next) => {
+router.put("/deregister", requireAuth, (req, res, next) => {
   events.findByIdAndUpdate(
     req.query.event,
     { $pull: { attendees: req.query.client } },
@@ -208,7 +208,7 @@ router.put("/deregister", authMiddleWare, (req, res, next) => {
 });
 
 // API endpoint to hard DELETE event by ID
-router.delete("/:id", authMiddleWare, (req, res, next) => {
+router.delete("/:id", requireAuth, (req, res, next) => {
   events.findOne({ _id: req.params.id, org: org }, (error, data) => {
     if (error) {
       return next(error);

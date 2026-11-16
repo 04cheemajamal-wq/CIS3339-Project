@@ -13,9 +13,10 @@ require('dotenv').config(); //require the dotenv
 const app = express();
 
 // add cors header to the server
+// S1: Locked down to CORS_ORIGIN instead of '*'
 app.use(
   cors({
-    origin: '*'
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5173'
   })
 );
 
@@ -39,6 +40,15 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(morgan('dev'));
 
+// B2: Health check endpoint (publicly accessible)
+app.get('/health', (req, res) => {
+  const dbState = mongoose.connection.readyState;
+  res.json({
+    status: 'ok',
+    db: dbState === 1 ? 'connected' : 'disconnected'
+  });
+});
+
 // setup middle ware for routes
 app.use('/clients', require('./routes/clients'));
 app.use('/events', require('./routes/events'));
@@ -57,5 +67,6 @@ app.use(function (err, req, res, next) {
   if (!err.statusCode) {
     err.statusCode = 500;
   }
-  res.status(err.statusCode).send(err.message);
+  // B2: Must return the required JSON shape { "error": "Human readable message" }
+  res.status(err.statusCode).json({ error: err.message });
 });
